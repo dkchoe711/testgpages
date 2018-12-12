@@ -3,7 +3,7 @@ title: Data Description and Initial EDA
 notebook: 1a_sensing_shirt_yichu_eda_with_plots_SECTION.ipynb
 nav_include: 1
 ---
-# Data Description/Summary and EDA
+
 
 
 ## Contents
