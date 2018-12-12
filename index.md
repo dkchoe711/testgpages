@@ -1,11 +1,10 @@
 ---
-title: AC209A Data Science Final Project
-notebook: Soft Sensing Shirt.ipynb
+title: Shoulder Angle Estimation with Soft Sensing Shirt
+notebook: index
 ---
 
 
-## Shoulder Angle Estimation with Soft Sensing Shirt
-**AC209a Final Project**<br/>
+## AC209A Data Science Final Project
 **Fall 2018**<br/>
 **Group # 50:** Dabin Choe, Yichu Jin, Evelyn Park
 
@@ -29,8 +28,4 @@ Is there a way to predict the position of the shoulder using only the sensor rea
 
 
 
-
-```python
-
-```
 
