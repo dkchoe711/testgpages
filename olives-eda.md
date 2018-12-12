@@ -1,7 +1,7 @@
 ---
-title: EDA
+title: olives
 notebook: olives-eda.ipynb
-nav_include: 4
+nav_include: 3
 ---
 
 ## Contents
