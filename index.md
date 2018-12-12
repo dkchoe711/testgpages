@@ -17,7 +17,7 @@ Musculoskeletal disorders (MSDs) are the most frequent cause of nonfatal occupat
 **Motivation:**
 The Harvard Biodesign Lab designed and built a soft sensing shirt that is capable of monitoring the user’s shoulder positions in a conformal, transparent, and comfortable manner. The sensing shirt contains six soft strain sensors around the user’s shoulder joint. The sensors measure the amounts of stretch experienced by the shirt, which can be used to estimate the user’s shoulder position. 
 
-<img src="img\sensing_shirt.png" width="400">
+<img src="notebooks\img\sensing_shirt.png" width="400">
 
 
 **Problem Statement:**
