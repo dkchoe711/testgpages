@@ -5,7 +5,7 @@ nav_include: 2
 ---
 
 
-## Shoulder Angle Estimatiion with Soft Sensing Shirt
+## Shoulder Angle Estimation with Soft Sensing Shirt
 **AC209a Final Project**<br/>
 **Fall 2018**<br/>
 **Group # 50:** Dabin Choe, Yichu Jin, Evelyn Park
