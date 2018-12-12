@@ -1,25 +1,1658 @@
----
-title: Models
-notebook: models
-nav_include: 3
----
+
+## Shoulder Angle Estimatiion with Soft Sensing Shirt
+**AC209a Final Project**<br/>
+**Fall 2018**<br/>
+**Group # 50:** Dabin Choe, Yichu Jin, Evelyn Park
 
 
 
-## Contents
-{:.no_toc}
-*  
-{: toc}
+```python
+import numpy as np
+import pandas as pd
+import math
+import matplotlib
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set(style="darkgrid")
+from pandas.plotting import scatter_matrix
+
+from sklearn import preprocessing
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.decomposition import PCA
+
+from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.model_selection import cross_val_score, train_test_split, KFold
+
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet, RidgeCV, LassoCV, ElasticNetCV
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
+
+import keras 
+from keras.models import Sequential
+from keras.layers import Dense, Activation, Dropout, Flatten, Reshape, LSTM, RNN
+from keras.optimizers import SGD
+
+import warnings
+warnings.filterwarnings('ignore')
+```
+
+
+
+
+```python
+#plt.style.use('ac209a.mplstyle')
+```
+
+
+# **EDA**
+
+
+
+```python
+names = ['Asa','Ci','Con','M1','M2','Siv']
+tests = ['A','B','C']
+dfs = [[],[],[],[],[],[]]
+
+for ind, name in enumerate(names):
+    for number in range(1,4):
+        for test in tests:
+            file_dir = 'data/' + name + '_t' + str(number) + test + '.txt'
+            dfs[ind].append(pd.read_csv(file_dir, header=None, names=['time','s1','s2','s3','s4','s5','s6','hf','ab','ir']).drop('time', axis=1))
+    dfs[ind] = pd.concat(dfs[ind], ignore_index=True)
+
+dfs_raw = dfs.copy
+    
+asa_df = dfs[0]
+ci_df = dfs[1]
+con_df = dfs[2]
+m1_df = dfs[3]
+m2_df = dfs[4]
+siv_df = dfs[5]
+names = ['asa_df','ci_df','con_df','m1_df','m2_df','siv_df']
+```
+
+
+**2. Initial EDA**
+
+
+
+```python
+def var_compare(var_name):
+    var_mat = np.zeros([len(dfs),7])
+    for ind in range(len(dfs)):
+        var_mat[ind,0] = np.mean(dfs[ind][var_name])
+        var_mat[ind,1] = np.std(dfs[ind][var_name])
+        var_mat[ind,2] = np.min(dfs[ind][var_name])
+        var_mat[ind,3] = np.percentile(dfs[ind][var_name], 25)
+        var_mat[ind,4] = np.percentile(dfs[ind][var_name], 50)
+        var_mat[ind,5] = np.percentile(dfs[ind][var_name], 75)
+        var_mat[ind,6] = np.max(dfs[ind][var_name])
+    return pd.DataFrame(var_mat, columns=['mean','std','min','25%','50%','75%','max'], index=names)
+```
+
+
+
+
+```python
+len_df = []
+for ind in range(len(dfs)):
+    len_df.append([len(dfs[ind])])
+print(pd.DataFrame(np.transpose(len_df), columns=names, index=['count']))
+
+for var_name in asa_df.columns:
+    print('\n',var_name,end=':\n')
+    display(var_compare(var_name))
+```
+
+
+           asa_df   ci_df  con_df   m1_df   m2_df  siv_df
+    count   80137  102941   91690  118276  100600  108239
+    
+     s1:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>216.453118</td>
+      <td>6.239034</td>
+      <td>203.24</td>
+      <td>210.93</td>
+      <td>216.24</td>
+      <td>220.73</td>
+      <td>237.62</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>214.748131</td>
+      <td>6.016105</td>
+      <td>203.06</td>
+      <td>210.09</td>
+      <td>214.19</td>
+      <td>217.84</td>
+      <td>240.58</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>216.213892</td>
+      <td>6.831680</td>
+      <td>156.15</td>
+      <td>211.58</td>
+      <td>215.98</td>
+      <td>220.07</td>
+      <td>243.90</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>218.049379</td>
+      <td>8.014971</td>
+      <td>190.36</td>
+      <td>211.49</td>
+      <td>217.04</td>
+      <td>222.76</td>
+      <td>245.77</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>216.742890</td>
+      <td>7.291396</td>
+      <td>203.20</td>
+      <td>210.41</td>
+      <td>216.23</td>
+      <td>221.23</td>
+      <td>244.24</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>219.781383</td>
+      <td>9.665048</td>
+      <td>202.65</td>
+      <td>211.74</td>
+      <td>218.43</td>
+      <td>225.18</td>
+      <td>258.16</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     s2:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>181.811781</td>
+      <td>6.299439</td>
+      <td>119.27</td>
+      <td>180.01</td>
+      <td>182.14</td>
+      <td>185.15</td>
+      <td>194.51</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>182.766706</td>
+      <td>3.009062</td>
+      <td>172.56</td>
+      <td>180.53</td>
+      <td>182.59</td>
+      <td>184.47</td>
+      <td>193.93</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>182.810786</td>
+      <td>2.588059</td>
+      <td>169.67</td>
+      <td>180.87</td>
+      <td>182.83</td>
+      <td>184.52</td>
+      <td>190.93</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>183.768007</td>
+      <td>3.430592</td>
+      <td>176.98</td>
+      <td>180.90</td>
+      <td>183.21</td>
+      <td>186.19</td>
+      <td>195.52</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>182.921446</td>
+      <td>3.134943</td>
+      <td>175.95</td>
+      <td>180.22</td>
+      <td>182.54</td>
+      <td>185.31</td>
+      <td>193.66</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>186.055229</td>
+      <td>4.270330</td>
+      <td>177.69</td>
+      <td>182.42</td>
+      <td>185.54</td>
+      <td>189.24</td>
+      <td>198.78</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     s3:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>217.197279</td>
+      <td>4.172028</td>
+      <td>199.20</td>
+      <td>214.34</td>
+      <td>216.30</td>
+      <td>219.37</td>
+      <td>231.39</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>222.232375</td>
+      <td>7.938231</td>
+      <td>207.38</td>
+      <td>215.88</td>
+      <td>220.36</td>
+      <td>227.86</td>
+      <td>246.38</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>224.143997</td>
+      <td>7.212742</td>
+      <td>211.59</td>
+      <td>218.35</td>
+      <td>222.15</td>
+      <td>228.80</td>
+      <td>247.67</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>222.187435</td>
+      <td>6.188347</td>
+      <td>210.01</td>
+      <td>217.17</td>
+      <td>220.85</td>
+      <td>227.52</td>
+      <td>241.44</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>222.309351</td>
+      <td>6.239305</td>
+      <td>210.55</td>
+      <td>217.16</td>
+      <td>221.48</td>
+      <td>226.78</td>
+      <td>242.08</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>230.754189</td>
+      <td>10.365366</td>
+      <td>213.18</td>
+      <td>221.70</td>
+      <td>228.57</td>
+      <td>239.46</td>
+      <td>258.99</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     s4:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>186.626416</td>
+      <td>10.364296</td>
+      <td>152.70</td>
+      <td>178.34</td>
+      <td>184.590</td>
+      <td>193.55</td>
+      <td>220.62</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>195.047368</td>
+      <td>13.932285</td>
+      <td>162.86</td>
+      <td>183.13</td>
+      <td>192.770</td>
+      <td>206.63</td>
+      <td>235.38</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>193.137100</td>
+      <td>12.331818</td>
+      <td>165.75</td>
+      <td>182.84</td>
+      <td>191.130</td>
+      <td>203.23</td>
+      <td>223.15</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>191.664900</td>
+      <td>11.441699</td>
+      <td>172.83</td>
+      <td>180.99</td>
+      <td>189.820</td>
+      <td>201.24</td>
+      <td>221.09</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>188.601743</td>
+      <td>11.171071</td>
+      <td>169.04</td>
+      <td>178.99</td>
+      <td>185.375</td>
+      <td>198.17</td>
+      <td>218.55</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>203.481896</td>
+      <td>14.670705</td>
+      <td>173.81</td>
+      <td>191.31</td>
+      <td>202.600</td>
+      <td>216.19</td>
+      <td>234.76</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     s5:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>145.766018</td>
+      <td>4.339345</td>
+      <td>136.78</td>
+      <td>142.27</td>
+      <td>145.29</td>
+      <td>148.31</td>
+      <td>162.06</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>148.061024</td>
+      <td>5.741397</td>
+      <td>135.50</td>
+      <td>143.84</td>
+      <td>147.73</td>
+      <td>151.31</td>
+      <td>180.03</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>147.869341</td>
+      <td>5.451739</td>
+      <td>117.27</td>
+      <td>143.62</td>
+      <td>147.60</td>
+      <td>151.44</td>
+      <td>173.56</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>148.174883</td>
+      <td>6.147763</td>
+      <td>136.43</td>
+      <td>142.83</td>
+      <td>147.45</td>
+      <td>152.73</td>
+      <td>172.60</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>146.306227</td>
+      <td>5.225233</td>
+      <td>136.11</td>
+      <td>141.68</td>
+      <td>145.53</td>
+      <td>150.34</td>
+      <td>167.97</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>151.058995</td>
+      <td>6.929840</td>
+      <td>137.73</td>
+      <td>145.77</td>
+      <td>150.16</td>
+      <td>154.68</td>
+      <td>178.40</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     s6:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>175.320695</td>
+      <td>9.017434</td>
+      <td>159.95</td>
+      <td>167.61</td>
+      <td>173.70</td>
+      <td>181.34</td>
+      <td>206.84</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>172.470513</td>
+      <td>7.767930</td>
+      <td>158.77</td>
+      <td>166.85</td>
+      <td>170.50</td>
+      <td>176.24</td>
+      <td>207.06</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>175.647503</td>
+      <td>8.827730</td>
+      <td>160.86</td>
+      <td>168.48</td>
+      <td>173.32</td>
+      <td>181.42</td>
+      <td>212.90</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>175.840283</td>
+      <td>11.274954</td>
+      <td>157.20</td>
+      <td>167.38</td>
+      <td>172.24</td>
+      <td>181.86</td>
+      <td>223.18</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>174.262837</td>
+      <td>8.941325</td>
+      <td>157.59</td>
+      <td>167.37</td>
+      <td>171.58</td>
+      <td>179.77</td>
+      <td>207.93</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>176.105028</td>
+      <td>10.319164</td>
+      <td>158.36</td>
+      <td>168.15</td>
+      <td>172.95</td>
+      <td>182.53</td>
+      <td>214.83</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     hf:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>32.545376</td>
+      <td>38.748847</td>
+      <td>-75.579</td>
+      <td>9.027300</td>
+      <td>28.07400</td>
+      <td>58.55200</td>
+      <td>128.04</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>29.163947</td>
+      <td>39.953221</td>
+      <td>-77.569</td>
+      <td>4.643700</td>
+      <td>26.00500</td>
+      <td>61.66500</td>
+      <td>124.93</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>19.301546</td>
+      <td>43.257538</td>
+      <td>-90.057</td>
+      <td>-5.171975</td>
+      <td>16.27400</td>
+      <td>49.70425</td>
+      <td>124.78</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>17.639829</td>
+      <td>39.666957</td>
+      <td>-63.980</td>
+      <td>-10.905000</td>
+      <td>9.98085</td>
+      <td>50.54550</td>
+      <td>113.70</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>26.203491</td>
+      <td>35.223921</td>
+      <td>-61.287</td>
+      <td>2.313050</td>
+      <td>20.69900</td>
+      <td>53.57900</td>
+      <td>115.36</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>19.835779</td>
+      <td>40.416916</td>
+      <td>-72.840</td>
+      <td>-3.874300</td>
+      <td>15.52900</td>
+      <td>49.31550</td>
+      <td>113.44</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     ab:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>73.731374</td>
+      <td>38.576321</td>
+      <td>9.3183</td>
+      <td>35.39300</td>
+      <td>80.0010</td>
+      <td>100.430</td>
+      <td>160.20</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>69.632838</td>
+      <td>35.892221</td>
+      <td>6.4550</td>
+      <td>36.18200</td>
+      <td>74.2910</td>
+      <td>94.376</td>
+      <td>149.46</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>66.346464</td>
+      <td>37.218989</td>
+      <td>6.9891</td>
+      <td>27.94825</td>
+      <td>70.0445</td>
+      <td>93.160</td>
+      <td>147.29</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>72.143624</td>
+      <td>40.578066</td>
+      <td>9.4489</td>
+      <td>33.01675</td>
+      <td>75.7355</td>
+      <td>97.003</td>
+      <td>163.76</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>74.409661</td>
+      <td>40.460662</td>
+      <td>7.7949</td>
+      <td>34.17650</td>
+      <td>80.0440</td>
+      <td>101.230</td>
+      <td>165.16</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>68.990595</td>
+      <td>30.961030</td>
+      <td>15.2150</td>
+      <td>38.79650</td>
+      <td>73.3790</td>
+      <td>90.658</td>
+      <td>143.41</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+    
+     ir:
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+      <th>min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>max</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>asa_df</th>
+      <td>8.709817</td>
+      <td>35.953266</td>
+      <td>-124.340</td>
+      <td>-12.76100</td>
+      <td>16.9710</td>
+      <td>35.83000</td>
+      <td>70.299</td>
+    </tr>
+    <tr>
+      <th>ci_df</th>
+      <td>16.076709</td>
+      <td>30.717534</td>
+      <td>-101.210</td>
+      <td>0.74645</td>
+      <td>27.4360</td>
+      <td>37.14900</td>
+      <td>63.597</td>
+    </tr>
+    <tr>
+      <th>con_df</th>
+      <td>5.172852</td>
+      <td>40.947012</td>
+      <td>-129.720</td>
+      <td>-25.13375</td>
+      <td>18.2800</td>
+      <td>36.60075</td>
+      <td>81.016</td>
+    </tr>
+    <tr>
+      <th>m1_df</th>
+      <td>18.635818</td>
+      <td>40.912169</td>
+      <td>-96.361</td>
+      <td>-16.18100</td>
+      <td>31.5395</td>
+      <td>48.84500</td>
+      <td>95.690</td>
+    </tr>
+    <tr>
+      <th>m2_df</th>
+      <td>8.294361</td>
+      <td>30.175750</td>
+      <td>-98.165</td>
+      <td>-11.47500</td>
+      <td>16.0060</td>
+      <td>30.22250</td>
+      <td>74.508</td>
+    </tr>
+    <tr>
+      <th>siv_df</th>
+      <td>-7.613668</td>
+      <td>32.554322</td>
+      <td>-102.510</td>
+      <td>-32.26600</td>
+      <td>4.2735</td>
+      <td>15.56400</td>
+      <td>48.393</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+The above matrices compare all the variables' variations among data taken from different subjects.
+
+
+
+```python
+names = ['Asa','Ci','Con','M1','M2','Siv']
+tests = ['A','B','C']
+dfs = [[],[],[],[],[],[]]
+
+for ind, name in enumerate(names):
+    for number in range(1,4):
+        for test in tests:
+            file_dir = 'data/' + name + '_t' + str(number) + test + '.txt'
+            dfs[ind].append(pd.read_csv(file_dir, header=None, names=['time','s1','s2','s3','s4','s5','s6','hf','ab','ir']).drop('time', axis=1))
+    dfs[ind] = pd.concat(dfs[ind], ignore_index=True)
+
+dfs_raw = dfs.copy
+    
+asa_df = dfs[0]
+ci_df = dfs[1]
+con_df = dfs[2]
+m1_df = dfs[3]
+m2_df = dfs[4]
+siv_df = dfs[5]
+names = ['asa_df','ci_df','con_df','m1_df','m2_df','siv_df']
+```
+
+
+
+
+```python
+def box_compare(var_name):
+    plot_df = pd.concat([df[var_name] for df in dfs], axis=1)
+    plot_df.columns = ['Sub1','Sub2','Sub3', 'Sub4', 'Sub5', 'Sub6']
+    ax = sns.boxplot(data=plot_df)       
+    ax.set_title('Ranges of '+ var_name, fontsize=20)
+    ax.set_ylabel(var_name, fontsize=20)
+    ax.tick_params(labelsize=20)
+    plt.show();
+        
+```
+
+
+
+
+```python
+
+for var_name in asa_df.columns:
+    box_compare(var_name)
+```
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_0.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_1.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_2.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_3.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_4.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_5.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_6.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_7.png)
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_11_8.png)
+
+
+
+
+```python
+def plt_compare(var_name):
+    nrows = int(len(dfs)/2)
+    ncols = 2
+    fig, axes = plt.subplots(nrows=nrows, ncols=ncols, 
+                             figsize=(4*nrows,4*ncols),
+                             sharex=True)
+    for row in range(nrows):
+        for col in range(ncols):
+            ind = row*ncols+col
+            sns.boxplot(x=var_name, data=dfs[ind], ax=axes[row,col])
+            axes[row,col].set(xlabel=names[ind])
+            fig.suptitle(var_name, x=0.515, y=0.91, fontsize=18);
+            fig.subplots_adjust(hspace=0.4)
+```
+
+
+**3. **
+
+
+
+```python
+tests = ['A','B','C']
+
+nrows = 3
+ncols = 3
+fig, axes = plt.subplots(nrows=nrows, ncols=ncols, figsize=(4*nrows,4*ncols), sharex=True, sharey=True)
+fig.subplots_adjust(hspace=0.4)
+
+title_names = ['Pre-defined', 'Composite', 'Random']
+
+for row, trial in enumerate(range(1,4)):
+    for col, test in enumerate(tests):
+            file_dir = 'data/Con_t' + str(trial) + test + '.txt'
+            df = pd.read_csv(file_dir, header=None, usecols=[1,2,3,4,5,6,7,8,9], 
+                                 names=['s1','s2','s3','s4','s5','s6','hf','ab','ir'])
+            axes[row,col].plot(df.hf, df.ab)
+            axes[row,col].set_xlabel('Horizontal Flexion')
+            axes[row,col].set_ylabel('Abduction');
+            #axes[row,col].set_title(file_dir);
+            axes[row,col].set_title('Trial ' + str(row+1) + ': ' + title_names[col] + ' Motions');
+    
+
+```
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_14_0.png)
+
+
+
+
+```python
+from mpl_toolkits import mplot3d
+ax = plt.axes(projection='3d')
+file_dir = 'data/M1_t3C.txt'
+df = pd.read_csv(file_dir, header=None, names=['t','s1','s2','s3','s4','s5','s6','hf','ab','ir'])
+ax.plot3D(df.t,df.ab,df.hf);
+```
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_15_0.png)
+
+
+
+
+```python
+#scatter_matrix(m1_df, alpha=0.5, figsize=(25,20));
+```
+
+
+**4. Using single data set**
+
+
+
+```python
+plt.style.use('ac209a.mplstyle')
+
+file_dir = 'data/M1_t1A.txt'
+df = pd.read_csv(file_dir, header=None, names=['t','s1','s2','s3','s4','s5','s6','hf','ab','ir'])
+
+fig, ax = plt.subplots(3, 2, figsize=(30,10), sharex='col')
+
+ax[0,0].plot(df.t, df.s1)
+ax[0,0].set_ylabel('s1')
+ax[0,1].plot(df.t, df.s2)
+ax[0,1].set_ylabel('s2')
+ax[1,0].plot(df.t, df.s3)
+ax[1,0].set_ylabel('s3')
+ax[1,1].plot(df.t, df.s4)
+ax[1,1].set_ylabel('s4')
+ax[2,0].plot(df.t, df.s5)
+ax[2,0].set_ylabel('s5')
+ax[2,0].set_xlabel('Time')
+ax[2,1].plot(df.t, df.s6)
+ax[2,1].set_ylabel('s6')
+ax[2,1].set_xlabel('Time');
+```
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_18_0.png)
+
+
+*Calculate signal drift*
+
+
+
+```python
+# Load data: M1
+
+tests = ['A','B','C']
+appended_data = []
+count = 0
+
+for number in range(1,4):
+    for test in tests:
+        file_dir = 'data/M1_t' + str(number) + test + '.txt'
+        data = pd.read_csv(file_dir, header=None, names=['t','s1','s2','s3','s4','s5','s6','hf','ab','ir'])
+        appended_data.append(data)
+        if count > 0:
+            appended_data[count].t = appended_data[count].t + max(appended_data[count-1].t)
+        count += 1
+        
+df = pd.concat(appended_data, ignore_index=True)
+```
+
+
+
+
+```python
+# Find observations with identical time stamp, 
+sam_t_df = df[df['t'].duplicated(keep=False)]
+sam_mocap_df = df[df[['hf','ab','ir']].duplicated(keep=False)]
+sam_sen_df = df[df[['s1','s2','s3','s4','s5','s6']].duplicated(keep=False)]
+```
+
+
+
+
+```python
+def func(df):
+    return np.max(df) - np.min(df)
+```
+
+
+
+
+```python
+sam_mocap_diff = []
+
+for name, group in sam_mocap_df.groupby(['ab','ir','hf']):
+    sam_mocap_diff.append([func(group.t), 
+                           func(group.s1), func(group.s2), func(group.s3), 
+                           func(group.s4), func(group.s5), func(group.s6)])
+sam_mocap_diff = pd.DataFrame(sam_mocap_diff, columns=['time_diff','s1_diff','s2_diff',
+                                                       's3_diff','s4_diff','s5_diff','s6_diff'])
+```
+
+
+
+
+```python
+sam_mocap_max_diff = []
+for col in sam_mocap_diff.columns:
+    sam_mocap_max_diff.append(np.max(sam_mocap_diff[col]))
+sam_mocap_max_diff = pd.DataFrame(sam_mocap_max_diff, 
+                                  index=['max time_diff','max s1_diff','max s2_diff',
+                                         'max s3_diff','max s4_diff','max s5_diff','max s6_diff']).T
+sam_mocap_max_diff
+```
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>max time_diff</th>
+      <th>max s1_diff</th>
+      <th>max s2_diff</th>
+      <th>max s3_diff</th>
+      <th>max s4_diff</th>
+      <th>max s5_diff</th>
+      <th>max s6_diff</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.01</td>
+      <td>0.01</td>
+      <td>0.0</td>
+      <td>0.01</td>
+      <td>0.01</td>
+      <td>0.01</td>
+      <td>0.01</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+
+```python
+sam_sen_diff = []
+count = 0
+for name, group in sam_sen_df.groupby(['s1','s2','s3','s4','s5','s6']):
+    count += 1
+    if count == 871:
+        display(group)
+    sam_sen_diff.append([count, func(group.t), func(group.ab), func(group.hf), func(group.ir)])
+sam_sen_diff = pd.DataFrame(sam_sen_diff, columns=['count','time_diff','ab_diff','hf_diff','ir_diff'])
+
+```
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>t</th>
+      <th>s1</th>
+      <th>s2</th>
+      <th>s3</th>
+      <th>s4</th>
+      <th>s5</th>
+      <th>s6</th>
+      <th>hf</th>
+      <th>ab</th>
+      <th>ir</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>32248</th>
+      <td>193.260</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.934</td>
+      <td>17.636</td>
+      <td>-40.091</td>
+    </tr>
+    <tr>
+      <th>32249</th>
+      <td>193.262</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.920</td>
+      <td>17.638</td>
+      <td>-40.081</td>
+    </tr>
+    <tr>
+      <th>32250</th>
+      <td>193.270</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.867</td>
+      <td>17.644</td>
+      <td>-40.046</td>
+    </tr>
+    <tr>
+      <th>32251</th>
+      <td>193.278</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.832</td>
+      <td>17.648</td>
+      <td>-40.026</td>
+    </tr>
+    <tr>
+      <th>32252</th>
+      <td>193.281</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.825</td>
+      <td>17.649</td>
+      <td>-40.024</td>
+    </tr>
+    <tr>
+      <th>32253</th>
+      <td>193.287</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.812</td>
+      <td>17.652</td>
+      <td>-40.018</td>
+    </tr>
+    <tr>
+      <th>32254</th>
+      <td>193.295</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.807</td>
+      <td>17.655</td>
+      <td>-40.022</td>
+    </tr>
+    <tr>
+      <th>32255</th>
+      <td>193.302</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.811</td>
+      <td>17.660</td>
+      <td>-40.031</td>
+    </tr>
+    <tr>
+      <th>32256</th>
+      <td>193.303</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.812</td>
+      <td>17.661</td>
+      <td>-40.033</td>
+    </tr>
+    <tr>
+      <th>32257</th>
+      <td>193.312</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.827</td>
+      <td>17.668</td>
+      <td>-40.052</td>
+    </tr>
+    <tr>
+      <th>32258</th>
+      <td>193.320</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.846</td>
+      <td>17.677</td>
+      <td>-40.078</td>
+    </tr>
+    <tr>
+      <th>32259</th>
+      <td>193.323</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.854</td>
+      <td>17.681</td>
+      <td>-40.089</td>
+    </tr>
+    <tr>
+      <th>32260</th>
+      <td>193.328</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.867</td>
+      <td>17.687</td>
+      <td>-40.107</td>
+    </tr>
+    <tr>
+      <th>32261</th>
+      <td>193.337</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.881</td>
+      <td>17.701</td>
+      <td>-40.132</td>
+    </tr>
+    <tr>
+      <th>32262</th>
+      <td>193.344</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.886</td>
+      <td>17.715</td>
+      <td>-40.150</td>
+    </tr>
+    <tr>
+      <th>32263</th>
+      <td>193.345</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.887</td>
+      <td>17.717</td>
+      <td>-40.152</td>
+    </tr>
+    <tr>
+      <th>32264</th>
+      <td>193.353</td>
+      <td>211.93</td>
+      <td>179.47</td>
+      <td>229.24</td>
+      <td>210.19</td>
+      <td>154.54</td>
+      <td>167.86</td>
+      <td>-13.889</td>
+      <td>17.734</td>
+      <td>-40.169</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+sam_sen_diff.iloc[sam_sen_diff.time_diff.idxmax]['count']
+```
+
+
+
+
+
+    871.0
+
+
+
+
+
+```python
+sam_sen_max_diff = []
+for col in sam_sen_diff.columns:
+    if col != 'count':
+        sam_sen_max_diff.append(np.max(sam_sen_diff[col]))
+sam_sen_max_diff = pd.DataFrame(sam_sen_max_diff, 
+                                index=['max time_diff','max ab_diff',
+                                       'max hf_diff','max ir_diff']).T
+sam_sen_max_diff
+```
+
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>max time_diff</th>
+      <th>max ab_diff</th>
+      <th>max hf_diff</th>
+      <th>max ir_diff</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.093</td>
+      <td>1.45</td>
+      <td>3.5004</td>
+      <td>3.489</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+
+```python
+#df[(df['t'] > 235.35) & (df['t'] < 236)]
+```
+
+
 # **Models**
 
-The various models learned in class were implemented to attempt prediction of the wearer's arm movements based upon the output of the six sensors embedded in the shirt. The data used in these models were from a single subject, pooled across all three trials collected in the protocol. The subject data was taken from subject #4, because that particular data set had the fewest outliers as discussed in the **Data Description and Initial EDA** section. Additionally, due to the high frequency of the collecte data, the data was downsampled to reduce the training time of the models. 
-
-
-
-**Train Test Split**
-The data was split as a function of time - with the first 80% of the data used as the training set, and the last 20% reserved for testing. Initially, we had done a train_test_split randomly, however this yields artificially inflated test scores of the models because in the actual application of the shirt, it is impossible to predict\results based on future data.
-
-## **A. Data Preparation and Cleaning**
+**A. Set Up Functions**
 
 
 
@@ -353,7 +1986,7 @@ X_df_added, y_df_added = load_data(['M1'], [1,2,3], ['A','B','C'],
 ```
 
 
-## **B. Linear Regression**
+**B. Linear Regression**
 
 
 
@@ -1403,7 +3036,7 @@ find_best_param(scores_list, degrees, 'degree')
     
 
 
-## **D. kNN**
+**D. kNN**
 
 
 
@@ -2605,7 +4238,7 @@ find_best_param(scores_list, k_values, 'k')
     
 
 
-## **E. Ridge**
+**E. Ridge**
 
 
 
@@ -3335,7 +4968,7 @@ for ind, score in enumerate(scores_list):
     
 
 
-## **F. LASSO**
+**F. LASSO**
 
 
 
@@ -3969,7 +5602,34 @@ for ind, score in enumerate(scores_list):
     
 
 
-## **G. Decision Tree**
+**G. Elastic Net**
+
+
+
+```python
+# lambdas = [.01,.05,.1,.5,1,5,10]
+# ratios = [.1, .5, .7, .9, .95, .99]
+# degrees = np.arange(1,11)
+# ab_scores, hf_scores, ir_scores = [], [], []
+# ab_models, hf_models, ir_models = [], [], []
+
+# for deg in degrees:
+#     print('\nDegree = ', deg)
+#     en = ElasticNetCV(cv=5, fit_intercept=False, alphas=lambdas, l1_ratio=ratios)
+#     result, models = display_all_results(en, df[sens], df, poly_deg=deg)
+#     ab_scores.append(result[0].r2[1])
+#     ab_models.append(models[0])
+#     hf_scores.append(result[1].r2[1])
+#     hf_models.append(models[1])
+#     ir_scores.append(result[2].r2[1])
+#     ir_models.append(models[2])
+    
+# scores_list = [ab_scores, hf_scores, ir_scores]
+# find_best_param(scores_list, degrees, 'degree')
+```
+
+
+**H. Decision Tree**
 
 
 
@@ -7176,7 +8836,7 @@ find_best_param(scores_list, depths, 'depth')
     
 
 
-## **H. Random Forest**
+**I. Random Forest**
 
 
 
@@ -10924,7 +12584,7 @@ for ind, score in enumerate(scores_list):
     
 
 
-## **I. Boosting**
+**J. Boosting**
 
 
 
@@ -11539,6 +13199,125 @@ display_all_results(ada, X_df_added, y_df_added, poly_deg=3);
   </tbody>
 </table>
 </div>
+
+
+
+
+```python
+ada = AdaBoostRegressor(base_estimator=RandomForestRegressor(n_estimators=100, max_depth=12, max_features=0.5), n_estimators=100, loss='square')
+display_all_results(ada, X_df_added, y_df_added, poly_deg=3, if_plot=True);
+```
+
+
+    
+    ********** ab: **********
+    
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_81_1.png)
+
+
+    
+    ********** hf: **********
+    
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_81_3.png)
+
+
+    
+    ********** ir: **********
+    
+
+
+
+![png](new_notebook_from_yichu_files/new_notebook_from_yichu_81_5.png)
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th></th>
+      <th>r2</th>
+      <th>mean_std</th>
+      <th>mae</th>
+      <th>rmse</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th rowspan="2" valign="top">ab</th>
+      <th>Train</th>
+      <td>0.994905</td>
+      <td>2.413413</td>
+      <td>2.573651</td>
+      <td>2.893114</td>
+    </tr>
+    <tr>
+      <th>Test</th>
+      <td>0.808521</td>
+      <td>12.634396</td>
+      <td>13.089944</td>
+      <td>17.515149</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">hf</th>
+      <th>Train</th>
+      <td>0.990795</td>
+      <td>2.865733</td>
+      <td>3.503007</td>
+      <td>3.858906</td>
+    </tr>
+    <tr>
+      <th>Test</th>
+      <td>0.744699</td>
+      <td>13.038281</td>
+      <td>14.267501</td>
+      <td>18.890212</td>
+    </tr>
+    <tr>
+      <th rowspan="2" valign="top">ir</th>
+      <th>Train</th>
+      <td>0.983870</td>
+      <td>3.299056</td>
+      <td>4.893673</td>
+      <td>5.356376</td>
+    </tr>
+    <tr>
+      <th>Test</th>
+      <td>0.740919</td>
+      <td>11.348431</td>
+      <td>12.175008</td>
+      <td>16.309777</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+
+```
 
 
 
@@ -12320,376 +14099,6 @@ display_all_results(clf, X_df_added, y_df_added, poly_deg=3);
 
 
 ```python
-X_train.shape[1]
-```
-
-
-
-
-
-    108
-
-
-
-
-
-```python
-# model = Sequential()
-# model.add(Dense(100, input_dim=X_train.shape[1], activation='relu')) # hidden layer 1
-# model.add(Dense(100, activation='relu')) # hidden layer 2
-# model.add(Dense(50, activation='relu')) # hidden layer 3
-# model.add(Dense(50, activation='relu')) # hidden layer 3
-# model.add(Dense(20, activation='relu')) # hidden layer 3
-# model.add(Dense(20, activation='relu')) # hidden layer 4
-# model.add(Dense(10, activation='relu')) # hidden layer 4
-# model.add(Dense(10, activation='relu')) # hidden layer 4
-# model.add(Dense(3, kernel_initializer='normal', activation='linear')) # output layer
-
-# model.compile(loss='mean_absolute_error', optimizer='adam')
-# model.summary()
-
-model = Sequential()
-model.add(Dense(100, input_dim=X_train.shape[1], activation='relu')) # hidden layer 1
-model.add(Dense(100, activation='relu')) # hidden layer 2
-model.add(Dense(90, activation='relu')) # hidden layer 2
-model.add(Dense(90, activation='relu')) # hidden layer 2
-model.add(Dense(80, activation='relu')) # hidden layer 2
-model.add(Dense(80, activation='relu')) # hidden layer 2
-model.add(Dense(70, activation='relu')) # hidden layer 3
-model.add(Dense(70, activation='relu')) # hidden layer 3
-model.add(Dense(60, activation='relu')) # hidden layer 3
-model.add(Dense(60, activation='relu')) # hidden layer 3
-model.add(Dense(50, activation='relu')) # hidden layer 3
-model.add(Dense(50, activation='relu')) # hidden layer 3
-model.add(Dense(40, activation='relu')) # hidden layer 4
-model.add(Dense(40, activation='relu')) # hidden layer 4
-model.add(Dense(30, activation='relu')) # hidden layer 4
-model.add(Dense(30, activation='relu')) # hidden layer 4
-model.add(Dense(20, activation='relu')) # hidden layer 4
-model.add(Dense(20, activation='relu')) # hidden layer 4
-model.add(Dense(10, activation='relu')) # hidden layer 4
-model.add(Dense(10, activation='relu')) # hidden layer 4
-model.add(Dense(3, kernel_initializer='normal', activation='linear')) # output layer
-
-model.compile(loss='mean_absolute_error', optimizer='adam')
-model.summary()
-
-```
-
-
-    _________________________________________________________________
-    Layer (type)                 Output Shape              Param #   
-    =================================================================
-    dense_158 (Dense)            (None, 100)               10900     
-    _________________________________________________________________
-    dense_159 (Dense)            (None, 100)               10100     
-    _________________________________________________________________
-    dense_160 (Dense)            (None, 90)                9090      
-    _________________________________________________________________
-    dense_161 (Dense)            (None, 90)                8190      
-    _________________________________________________________________
-    dense_162 (Dense)            (None, 80)                7280      
-    _________________________________________________________________
-    dense_163 (Dense)            (None, 80)                6480      
-    _________________________________________________________________
-    dense_164 (Dense)            (None, 70)                5670      
-    _________________________________________________________________
-    dense_165 (Dense)            (None, 70)                4970      
-    _________________________________________________________________
-    dense_166 (Dense)            (None, 60)                4260      
-    _________________________________________________________________
-    dense_167 (Dense)            (None, 60)                3660      
-    _________________________________________________________________
-    dense_168 (Dense)            (None, 50)                3050      
-    _________________________________________________________________
-    dense_169 (Dense)            (None, 50)                2550      
-    _________________________________________________________________
-    dense_170 (Dense)            (None, 40)                2040      
-    _________________________________________________________________
-    dense_171 (Dense)            (None, 40)                1640      
-    _________________________________________________________________
-    dense_172 (Dense)            (None, 30)                1230      
-    _________________________________________________________________
-    dense_173 (Dense)            (None, 30)                930       
-    _________________________________________________________________
-    dense_174 (Dense)            (None, 20)                620       
-    _________________________________________________________________
-    dense_175 (Dense)            (None, 20)                420       
-    _________________________________________________________________
-    dense_176 (Dense)            (None, 10)                210       
-    _________________________________________________________________
-    dense_177 (Dense)            (None, 10)                110       
-    _________________________________________________________________
-    dense_178 (Dense)            (None, 3)                 33        
-    =================================================================
-    Total params: 83,433
-    Trainable params: 83,433
-    Non-trainable params: 0
-    _________________________________________________________________
-
-
-
-
-```python
-model_history = model.fit(X_train, y_train, batch_size=32, epochs=100, validation_split=0.2, verbose=1)
-
-```
-
-
-    Train on 3764 samples, validate on 941 samples
-    Epoch 1/100
-    3764/3764 [==============================] - 3s 734us/step - loss: 40.3180 - val_loss: 25.4107
-    Epoch 2/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 24.1792 - val_loss: 23.7923
-    Epoch 3/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 22.0928 - val_loss: 21.3647
-    Epoch 4/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 22.0714 - val_loss: 22.7171
-    Epoch 5/100
-    3764/3764 [==============================] - 1s 163us/step - loss: 20.5529 - val_loss: 19.8051
-    Epoch 6/100
-    3764/3764 [==============================] - 1s 149us/step - loss: 16.6256 - val_loss: 17.2805
-    Epoch 7/100
-    3764/3764 [==============================] - 1s 149us/step - loss: 16.5318 - val_loss: 15.9432
-    Epoch 8/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 16.7737 - val_loss: 17.6721
-    Epoch 9/100
-    3764/3764 [==============================] - 1s 178us/step - loss: 16.6512 - val_loss: 17.0590
-    Epoch 10/100
-    3764/3764 [==============================] - 1s 174us/step - loss: 15.9341 - val_loss: 16.5510
-    Epoch 11/100
-    3764/3764 [==============================] - 1s 177us/step - loss: 16.1103 - val_loss: 17.6789
-    Epoch 12/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 16.2050 - val_loss: 16.9203
-    Epoch 13/100
-    3764/3764 [==============================] - 1s 174us/step - loss: 15.7640 - val_loss: 17.2906
-    Epoch 14/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 15.5917 - val_loss: 18.0822
-    Epoch 15/100
-    3764/3764 [==============================] - 1s 176us/step - loss: 15.1871 - val_loss: 19.1458
-    Epoch 16/100
-    3764/3764 [==============================] - 1s 178us/step - loss: 16.2177 - val_loss: 17.2518
-    Epoch 17/100
-    3764/3764 [==============================] - 1s 169us/step - loss: 14.9612 - val_loss: 17.1395
-    Epoch 18/100
-    3764/3764 [==============================] - 1s 169us/step - loss: 15.1124 - val_loss: 16.6953
-    Epoch 19/100
-    3764/3764 [==============================] - 1s 171us/step - loss: 15.0865 - val_loss: 16.1989
-    Epoch 20/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 15.5371 - val_loss: 15.7065
-    Epoch 21/100
-    3764/3764 [==============================] - 1s 177us/step - loss: 15.2354 - val_loss: 16.3340
-    Epoch 22/100
-    3764/3764 [==============================] - 1s 170us/step - loss: 15.3900 - val_loss: 19.6212
-    Epoch 23/100
-    3764/3764 [==============================] - 1s 171us/step - loss: 15.7235 - val_loss: 17.3506
-    Epoch 24/100
-    3764/3764 [==============================] - 1s 180us/step - loss: 15.1481 - val_loss: 16.1005
-    Epoch 25/100
-    3764/3764 [==============================] - 1s 174us/step - loss: 15.4714 - val_loss: 19.3828
-    Epoch 26/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 15.0835 - val_loss: 15.9475
-    Epoch 27/100
-    3764/3764 [==============================] - 1s 172us/step - loss: 15.4153 - val_loss: 15.6943
-    Epoch 28/100
-    3764/3764 [==============================] - 1s 166us/step - loss: 15.5136 - val_loss: 16.2503
-    Epoch 29/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 15.2410 - val_loss: 16.9706
-    Epoch 30/100
-    3764/3764 [==============================] - 1s 167us/step - loss: 14.4257 - val_loss: 16.1826
-    Epoch 31/100
-    3764/3764 [==============================] - 1s 173us/step - loss: 15.2745 - val_loss: 18.1865
-    Epoch 32/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 15.1805 - val_loss: 16.6748
-    Epoch 33/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 14.9418 - val_loss: 17.0664
-    Epoch 34/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 15.7975 - val_loss: 18.7682
-    Epoch 35/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 15.4077 - val_loss: 16.6966
-    Epoch 36/100
-    3764/3764 [==============================] - 1s 176us/step - loss: 14.9211 - val_loss: 16.1390
-    Epoch 37/100
-    3764/3764 [==============================] - 1s 197us/step - loss: 15.9479 - val_loss: 19.0537
-    Epoch 38/100
-    3764/3764 [==============================] - 1s 169us/step - loss: 15.7274 - val_loss: 16.7975
-    Epoch 39/100
-    3764/3764 [==============================] - 1s 185us/step - loss: 15.0230 - val_loss: 18.0706
-    Epoch 40/100
-    3764/3764 [==============================] - 1s 184us/step - loss: 15.3246 - val_loss: 16.4543
-    Epoch 41/100
-    3764/3764 [==============================] - 1s 176us/step - loss: 15.0312 - val_loss: 17.1214
-    Epoch 42/100
-    3764/3764 [==============================] - 1s 178us/step - loss: 14.8189 - val_loss: 17.5010
-    Epoch 43/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 15.1025 - val_loss: 16.8405
-    Epoch 44/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.7964 - val_loss: 16.7813
-    Epoch 45/100
-    3764/3764 [==============================] - 1s 153us/step - loss: 14.8760 - val_loss: 17.3656
-    Epoch 46/100
-    3764/3764 [==============================] - 1s 156us/step - loss: 15.4501 - val_loss: 16.1297
-    Epoch 47/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 14.9467 - val_loss: 15.8008
-    Epoch 48/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 15.5817 - val_loss: 17.1660
-    Epoch 49/100
-    3764/3764 [==============================] - 1s 169us/step - loss: 15.0109 - val_loss: 16.4287
-    Epoch 50/100
-    3764/3764 [==============================] - 1s 167us/step - loss: 15.6192 - val_loss: 15.9190
-    Epoch 51/100
-    3764/3764 [==============================] - 1s 175us/step - loss: 14.7523 - val_loss: 18.4342
-    Epoch 52/100
-    3764/3764 [==============================] - 1s 191us/step - loss: 15.4945 - val_loss: 16.5074
-    Epoch 53/100
-    3764/3764 [==============================] - 1s 200us/step - loss: 15.2032 - val_loss: 17.2902
-    Epoch 54/100
-    3764/3764 [==============================] - 1s 173us/step - loss: 14.8796 - val_loss: 16.4344
-    Epoch 55/100
-    3764/3764 [==============================] - 1s 171us/step - loss: 15.1394 - val_loss: 16.4586
-    Epoch 56/100
-    3764/3764 [==============================] - 1s 163us/step - loss: 14.5710 - val_loss: 18.3940
-    Epoch 57/100
-    3764/3764 [==============================] - 1s 163us/step - loss: 15.0018 - val_loss: 15.5646
-    Epoch 58/100
-    3764/3764 [==============================] - 1s 171us/step - loss: 15.0073 - val_loss: 16.5183
-    Epoch 59/100
-    3764/3764 [==============================] - 1s 159us/step - loss: 15.1872 - val_loss: 19.3908
-    Epoch 60/100
-    3764/3764 [==============================] - 1s 146us/step - loss: 14.7219 - val_loss: 15.4611
-    Epoch 61/100
-    3764/3764 [==============================] - 1s 147us/step - loss: 14.6760 - val_loss: 16.5481
-    Epoch 62/100
-    3764/3764 [==============================] - 1s 150us/step - loss: 15.1323 - val_loss: 16.3189
-    Epoch 63/100
-    3764/3764 [==============================] - 1s 150us/step - loss: 14.5026 - val_loss: 18.2118
-    Epoch 64/100
-    3764/3764 [==============================] - 1s 159us/step - loss: 14.7040 - val_loss: 16.0291
-    Epoch 65/100
-    3764/3764 [==============================] - 1s 167us/step - loss: 15.0483 - val_loss: 16.3999
-    Epoch 66/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 14.6911 - val_loss: 16.0100
-    Epoch 67/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 14.6846 - val_loss: 14.8094
-    Epoch 68/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 14.9568 - val_loss: 15.4795
-    Epoch 69/100
-    3764/3764 [==============================] - 1s 164us/step - loss: 14.4784 - val_loss: 15.6593
-    Epoch 70/100
-    3764/3764 [==============================] - 1s 160us/step - loss: 14.1175 - val_loss: 16.2620
-    Epoch 71/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.1800 - val_loss: 15.9714
-    Epoch 72/100
-    3764/3764 [==============================] - 1s 158us/step - loss: 15.0363 - val_loss: 15.7003
-    Epoch 73/100
-    3764/3764 [==============================] - 1s 156us/step - loss: 15.0927 - val_loss: 15.2592
-    Epoch 74/100
-    3764/3764 [==============================] - 1s 147us/step - loss: 14.6168 - val_loss: 16.9237
-    Epoch 75/100
-    3764/3764 [==============================] - 1s 152us/step - loss: 14.3343 - val_loss: 15.9553
-    Epoch 76/100
-    3764/3764 [==============================] - 1s 150us/step - loss: 14.4360 - val_loss: 16.3659
-    Epoch 77/100
-    3764/3764 [==============================] - 1s 149us/step - loss: 14.5705 - val_loss: 17.1711
-    Epoch 78/100
-    3764/3764 [==============================] - 1s 159us/step - loss: 14.4924 - val_loss: 16.2090
-    Epoch 79/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.7343 - val_loss: 15.0574
-    Epoch 80/100
-    3764/3764 [==============================] - 1s 160us/step - loss: 14.5772 - val_loss: 17.7985
-    Epoch 81/100
-    3764/3764 [==============================] - 1s 159us/step - loss: 14.3990 - val_loss: 15.6560
-    Epoch 82/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 14.1386 - val_loss: 15.3596
-    Epoch 83/100
-    3764/3764 [==============================] - 1s 168us/step - loss: 14.3596 - val_loss: 19.0101
-    Epoch 84/100
-    3764/3764 [==============================] - 1s 155us/step - loss: 14.7944 - val_loss: 15.4458
-    Epoch 85/100
-    3764/3764 [==============================] - 1s 146us/step - loss: 14.2617 - val_loss: 16.3090
-    Epoch 86/100
-    3764/3764 [==============================] - 1s 153us/step - loss: 14.3113 - val_loss: 16.0983
-    Epoch 87/100
-    3764/3764 [==============================] - 1s 149us/step - loss: 14.0535 - val_loss: 15.7231
-    Epoch 88/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.5125 - val_loss: 15.8840
-    Epoch 89/100
-    3764/3764 [==============================] - 1s 156us/step - loss: 13.7305 - val_loss: 16.4480
-    Epoch 90/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.4467 - val_loss: 16.9583
-    Epoch 91/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.6996 - val_loss: 15.3177
-    Epoch 92/100
-    3764/3764 [==============================] - 1s 160us/step - loss: 14.4070 - val_loss: 15.6067
-    Epoch 93/100
-    3764/3764 [==============================] - 1s 157us/step - loss: 14.4244 - val_loss: 15.3037
-    Epoch 94/100
-    3764/3764 [==============================] - 1s 155us/step - loss: 13.8904 - val_loss: 15.6639
-    Epoch 95/100
-    3764/3764 [==============================] - 1s 159us/step - loss: 13.7488 - val_loss: 14.7496
-    Epoch 96/100
-    3764/3764 [==============================] - 1s 160us/step - loss: 14.8924 - val_loss: 16.2918
-    Epoch 97/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 14.3178 - val_loss: 16.4336
-    Epoch 98/100
-    3764/3764 [==============================] - 1s 160us/step - loss: 14.2701 - val_loss: 15.5918
-    Epoch 99/100
-    3764/3764 [==============================] - 1s 162us/step - loss: 14.4278 - val_loss: 15.9918
-    Epoch 100/100
-    3764/3764 [==============================] - 1s 161us/step - loss: 13.9009 - val_loss: 15.5951
-
-
-
-
-```python
-# plot training progress (via loss func) over epochs
-fig,ax = plt.subplots(1,1)
-ax.plot(model_history.epoch,model_history.history['loss'],label='training')
-ax.plot(model_history.epoch,model_history.history['val_loss'],label='validation')
-
-ax.set_xlabel('# of epochs')
-ax.set_ylabel('Loss')
-ax.set_title('Training and validation loss of NN as a function of epochs')
-
-ax.legend();
-```
-
-
-
-![png](2_sensing_shirt_yichu_models_SECTION_files/2_sensing_shirt_yichu_models_SECTION_65_0.png)
-
-
-
-
-```python
-# make predictions
-y_pred_train = model.predict(X_train)
-y_pred_test = model.predict(X_test)
-```
-
-
-
-
-```python
-for k, ang in enumerate(angs):
-  print(ang)
-  print(r2_score(y_test.values[:,k],y_pred_test[:,k]))
-```
-
-
-    ab
-    0.7743722536696551
-    hf
-    0.6067573952164149
-    ir
-    0.7014920307049253
-
-
-    ## **J. ANN**
-
-
-
-```python
 n_sens = 6
 sens = ['s'+str(k) for k in range(1,n_sens+1)]
 angs = ['ab', 'hf', 'ir']
@@ -12775,5 +14184,4 @@ for k, ang in enumerate(angs):
     0.7219362029124989
     ir
     0.7457156462426968
-
 
