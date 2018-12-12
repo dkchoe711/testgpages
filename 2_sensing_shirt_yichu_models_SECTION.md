@@ -332,27 +332,6 @@ X_df_added, y_df_added = load_data(['M1'], [1,2,3], ['A','B','C'],
 ```
 
 
-
-
-```python
-# X_train, X_test, y_train, y_test = train_test_split(X_df_added, y_df_added[angs], test_size=0.2, shuffle=False)
-
-# poly = PolynomialFeatures(degree=3)
-# X_train_add = pd.DataFrame(poly.fit_transform(X_train[sens]))
-# X_test_add = pd.DataFrame(poly.fit_transform(X_test[sens]))
-
-# X_train = pd.concat([pd.DataFrame(X_train.values, columns=X_train.columns), 
-#                      X_train_add], axis=1).drop(sens, axis=1)
-# X_test = pd.concat([pd.DataFrame(X_test.values, columns=X_test.columns), 
-#                     X_test_add], axis=1).drop(sens, axis=1)
-
-# X_train.to_csv('X_train.csv', index = False)
-# y_train.to_csv('y_train.csv', index = False)
-# X_test.to_csv('X_test.csv', index = False)
-# y_test.to_csv('y_test.csv', index = False)
-```
-
-
 ## **B. Linear Regression**
 
 
