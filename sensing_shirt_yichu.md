@@ -1,7 +1,7 @@
 ---
 title: Sensing Shirt Models
 notebook: sensing_shirt_yichu.ipynb
-nav_include: 3
+nav_include: 2
 ---
 
 
