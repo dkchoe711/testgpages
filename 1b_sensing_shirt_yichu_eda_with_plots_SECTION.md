@@ -96,7 +96,7 @@ for var_name in asa_df.columns:
 ![png](1b_sensing_shirt_yichu_eda_with_plots_SECTION_files/1b_sensing_shirt_yichu_eda_with_plots_SECTION_6_8.png)
 
 
-#### Comment: 
+**Comments**: 
 As can be seen from plots above showing the values of the six embedded sensors for each of the six subjects, there are several outliers in the sensor outputs. The outliers on the lower ranges can be attributed to sensor
 shorting due to shirt wrinkling during certain motions. The outliers on the higher ranges can be attributed
 to occasional movement of the shirt and the sensor extreme positions during the random motion condition. 
@@ -557,7 +557,7 @@ sam_sen_max_diff
 
 
 
-#### Comment:
+**Comment**:
 To further investigate on the amount of sensor signal drift,
 we calculated maximum MOCAP angle differences for the observations with identical sensor outputs.
 The max difference in abduction is 1.45 degrees, in horizontal flexion is 3.50 degrees, and in internal

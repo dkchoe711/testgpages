@@ -1,19 +1,16 @@
+
 ---
 title: Data Description and Initial EDA
-notebook: 1a_sensing_shirt_yichu_eda_with_plots_SECTION.ipynb
-nav_include: 2
+notebook: sensing_shirt_yichu.ipynb
+nav_include: 1
 ---
+# Data Description/Summary and EDA
 
-# Data Description and EDA
 
 ## Contents
 {:.no_toc}
 *  
 {: toc}
-
-
-
-# 1. Data Description and Summary
  
 
 ### 1) Experimental Protocol Details
@@ -189,7 +186,7 @@ ax[-1].set_xlabel('Time');
 ![png](1a_sensing_shirt_yichu_eda_with_plots_SECTION_files/1a_sensing_shirt_yichu_eda_with_plots_SECTION_7_0.png)
 
 
-#### Comments: 
+**Comments**: 
 From the plot above it is visible that there is a distinct difference shown in certain sensors during movement in each of the three directions - this leads us to believe that using some subset of the signals output by the embedded sensors will be a viable way of predicting a corresponding arm angle. For clarification, the plot above was made prior to the feature removal of the timestamp for visualization purposes. 
 
 
@@ -221,13 +218,14 @@ plt.show()
 ![png](1a_sensing_shirt_yichu_eda_with_plots_SECTION_files/1a_sensing_shirt_yichu_eda_with_plots_SECTION_9_0.png)
 
 
-#### Comments: 
+**Comments**: 
 The figure shows how sensor readings vary in the 3D angle space of the shoulder joint. For each plot, the
 axes are the ground truth shoulder angles as measured by motion capture (hf, ab, ir), while the sensor
 value (normalized over the range) is represented by the point color. From this we can identify general
 trends of how different sensors behave in different regions of the angle space. For example, from the
 overall direction of the color gradients we can see that different sensors do better at picking up motion
 along a specific axis than others. Sensors 1, 2, 4, 6 [s1, s2, s4, s6] are more sensitive to abduction,  s4, s5 are more sensitive to internal rotation, and s5 and s6 are more sensitive to motion in horizontal flexion. 
+
 
 
 ```python
@@ -314,7 +312,7 @@ for var_name in asa_df.columns:
 ![png](1b_sensing_shirt_yichu_eda_with_plots_SECTION_files/1b_sensing_shirt_yichu_eda_with_plots_SECTION_6_8.png)
 
 
-#### Comment: 
+**Comments**: 
 As can be seen from plots above showing the values of the six embedded sensors for each of the six subjects, there are several outliers in the sensor outputs. The outliers on the lower ranges can be attributed to sensor
 shorting due to shirt wrinkling during certain motions. The outliers on the higher ranges can be attributed
 to occasional movement of the shirt and the sensor extreme positions during the random motion condition. 
@@ -775,7 +773,7 @@ sam_sen_max_diff
 
 
 
-#### Comment:
+**Comment**:
 To further investigate on the amount of sensor signal drift,
 we calculated maximum MOCAP angle differences for the observations with identical sensor outputs.
 The max difference in abduction is 1.45 degrees, in horizontal flexion is 3.50 degrees, and in internal
