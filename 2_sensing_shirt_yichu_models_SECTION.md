@@ -2714,7 +2714,7 @@ for ind, score in enumerate(scores_list):
     
 
 
-### **6) Decision Tree**
+### **6) Decision Treeasdgfsdfdh**
 
 
 
@@ -2769,7 +2769,8 @@ find_best_param(scores_list, depths, 'depth')
       <td>7.381882</td>
       <td>10.319233</td>
     </tr>
-  </table>
+  </tbody> 
+</table>
 <div>
 
     ab:
