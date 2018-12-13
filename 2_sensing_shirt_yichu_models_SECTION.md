@@ -4662,7 +4662,7 @@ sens = ['s'+str(k) for k in range(1,n_sens+1)] # predictors: sensor labels s1 th
 ```
 
 
-# Data selection
+#**Data selection**
 
 
 
@@ -4706,7 +4706,7 @@ t_test = df_test_pooled.time
 ```
 
 
-### 1) Data setup
+### **1) Data setup**
 
 
 
@@ -5014,7 +5014,7 @@ display(X_test)
             0.60297412]])
 
 
-#### Plot data
+#### **Plot data**
 
 
 
