@@ -2769,6 +2769,7 @@ find_best_param(scores_list, depths, 'depth')
       <td>7.381882</td>
       <td>10.319233</td>
     </tr>
+  </table>
 <div>
 
     ab:
@@ -4225,6 +4226,7 @@ display_all_results(ada, X_df_added, y_df_added, poly_deg=3);
 
 
 **Decision Tree**
+
 ```python
 clf =  DecisionTreeRegressor()
 display_all_results(clf, X_df_added, y_df_added, poly_deg=3);
