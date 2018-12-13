@@ -11,6 +11,10 @@ Below is a summary of the mutiple models tested on the sensing shirt data of a s
 
 [![](results1.png)](results1.png)
 
+[![](results2.png)](results2.png)
+
+[![](results3.png)](results3.png)
+
 
 
 
