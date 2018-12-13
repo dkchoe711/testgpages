@@ -12389,24 +12389,7 @@ for k, ang in enumerate(angs):
 ## J. NN
 
 
-
-    Drive already mounted at /content/gdrive; to attempt to forcibly remount, call drive.mount("/content/gdrive", force_remount=True).
-
-
-
-
-```
-# project directory within Google drive
-mydir = 'gdrive/My Drive/courses/AC209a/final project offline/'
-
-# custom stype
-plt.style.use(mydir+'code/ac209a.mplstyle')
-```
-
-
-
-
-```
+```python
 # import libraries
 
 import random
@@ -12436,7 +12419,7 @@ pd.set_option('display.max_columns', 100)
 
 
 
-```
+```python
 angs = ['hf','ab','ir'] # response: ground truth mocap angles (3 DOF)
 
 n_sens = 6
@@ -12444,11 +12427,11 @@ sens = ['s'+str(k) for k in range(1,n_sens+1)] # predictors: sensor labels s1 th
 ```
 
 
-#Data selection
+# Data selection
 
 
 
-```
+```python
 # # OPTION 1: SINGLE DATA SET (for quick testing purposes)
 
 # # since for LSTM order matters, avoid pooled data (because not sure what will happen at discontinuities when concatenating)
@@ -12472,7 +12455,7 @@ sens = ['s'+str(k) for k in range(1,n_sens+1)] # predictors: sensor labels s1 th
 
 
 
-```
+```python
 # OPTION 2: POOLED - use sets 1 and 2 as train, set 3 as test
 
 dfs = [] # list of dataframes
@@ -12513,28 +12496,11 @@ t_test = df_test_pooled.time
 ```
 
 
-
-
-```
-# # OPTION 3: Yichu's train/test set
-# # all files pooled, every 20 points, first 80% as training set and last 20% as test set.
-# # Added features: previous terms, 1st and 2nd derivative, polynomialFeatures of 3
-
-# X_train = pd.read_csv(mydir+'data/X_train.csv')
-# X_test = pd.read_csv(mydir+'data/X_test.csv')
-# y_train = pd.read_csv(mydir+'data/y_train.csv')
-# y_test = pd.read_csv(mydir+'data/y_test.csv')
-
-# display(X_train.head())
-# display(y_test.head())
-```
-
-
-#Data setup
+### 1) Data setup
 
 
 
-```
+```python
 # verify sizes of train and test sets (before processing)
 print(X_train_raw.shape)
 print(y_train.shape)
@@ -12712,7 +12678,7 @@ display(X_test_raw.head())
 
 
 
-```
+```python
 # downsample data
 # if you don't want to downsample just set f=1
 
@@ -12731,7 +12697,7 @@ t_test = t_test.iloc[::f]
 
 
 
-```
+```python
 # add sensor change rates
 
 tvals = t_train
@@ -12773,21 +12739,9 @@ for s in sens:
 ```
 
 
-    /usr/local/lib/python3.6/dist-packages/ipykernel_launcher.py:17: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
-    /usr/local/lib/python3.6/dist-packages/ipykernel_launcher.py:37: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy
 
 
-
-
-```
+```python
 # normalize sensor data
 scaler = MinMaxScaler() # default will scale 0 to 1
 scaler.fit(X_train_raw_ds) # fit scaler on training data
@@ -12798,7 +12752,7 @@ X_test = scaler.transform(X_test_raw_ds)
 
 
 
-```
+```python
 # verify sizes of train and test sets (final)
 print(X_train.shape)
 print(y_train.shape)
@@ -12854,48 +12808,53 @@ display(X_test)
 
 
 
-```
+```python
 # plot predictors and response variables over time
 
 fig, ax = plt.subplots(n_sens, 1, figsize=(99,20))
 
+fig.suptitle('Pooled sensor data over time')
+
 for k in range(0,n_sens):
-    ax[k].plot(t_train,X_train[:,k])
-    ax[k].plot(t_test,X_test[:,k])
+    ax[k].plot(t_train,X_train[:,k],label='Training set')
+    ax[k].plot(t_test,X_test[:,k],label='Test set')
     ax[k].set_ylabel(sens[k])
     
+ax[0].legend(loc=(0.92,1.1));
 ax[-1].set_xlabel('Time (s)');
 ```
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_15_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)
 
 
 
 
-```
-
+```python
 fig, ax = plt.subplots(3, 1, figsize=(60,10))
 
+fig.suptitle('Pooled angle data over time')
+
 for k in range(0,3):
-    ax[k].plot(t_train,y_train[angs[k]])
-    ax[k].plot(t_test,y_test[angs[k]])
+    ax[k].plot(t_train,y_train[angs[k]],label='Training set')
+    ax[k].plot(t_test,y_test[angs[k]],label='Test set')
     ax[k].set_ylabel(angs[k])
     
+ax[0].legend(loc=(0.92,1.1));
 ax[-1].set_xlabel('Time (s)');
 ```
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_16_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)
 
 
-# Standard NN
+### 2) Standard NN
 
 
 
-```
+```python
 # build NN structure
 
 # n timepoints
@@ -12932,237 +12891,35 @@ model.summary()
 
 
 
-```
+```python
+# fit the model
 model_history = model.fit(X_train, y_train, batch_size=32, epochs=100, validation_split=0.2, verbose=1)
 ```
 
 
-    Train on 6375 samples, validate on 1594 samples
-    Epoch 1/100
-    6375/6375 [==============================] - 4s 565us/step - loss: 2499.4318 - val_loss: 1703.1983
-    Epoch 2/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 1848.0567 - val_loss: 1442.9526
-    Epoch 3/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 1585.1698 - val_loss: 893.6157
-    Epoch 4/100
-    6375/6375 [==============================] - 1s 179us/step - loss: 966.0027 - val_loss: 657.9483
-    Epoch 5/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 837.4068 - val_loss: 614.9128
-    Epoch 6/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 774.6220 - val_loss: 558.0791
-    Epoch 7/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 695.1523 - val_loss: 455.7128
-    Epoch 8/100
-    6375/6375 [==============================] - 1s 190us/step - loss: 586.8512 - val_loss: 380.9901
-    Epoch 9/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 515.4677 - val_loss: 350.4600
-    Epoch 10/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 473.5766 - val_loss: 339.2905
-    Epoch 11/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 447.0824 - val_loss: 344.3625
-    Epoch 12/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 428.3781 - val_loss: 337.3541
-    Epoch 13/100
-    6375/6375 [==============================] - 1s 179us/step - loss: 418.5529 - val_loss: 329.8811
-    Epoch 14/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 409.1926 - val_loss: 328.9539
-    Epoch 15/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 402.5311 - val_loss: 335.5433
-    Epoch 16/100
-    6375/6375 [==============================] - 1s 189us/step - loss: 397.7316 - val_loss: 331.6946
-    Epoch 17/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 391.5557 - val_loss: 334.1715
-    Epoch 18/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 384.5381 - val_loss: 339.2335
-    Epoch 19/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 381.8002 - val_loss: 338.9728
-    Epoch 20/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 374.2169 - val_loss: 332.8290
-    Epoch 21/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 370.0787 - val_loss: 327.9680
-    Epoch 22/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 365.5531 - val_loss: 329.7460
-    Epoch 23/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 359.4479 - val_loss: 333.4288
-    Epoch 24/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 351.4229 - val_loss: 333.9170
-    Epoch 25/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 348.9504 - val_loss: 347.9374
-    Epoch 26/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 342.8881 - val_loss: 344.2763
-    Epoch 27/100
-    6375/6375 [==============================] - 1s 178us/step - loss: 336.2176 - val_loss: 353.0071
-    Epoch 28/100
-    6375/6375 [==============================] - 1s 176us/step - loss: 332.7861 - val_loss: 372.5992
-    Epoch 29/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 326.8117 - val_loss: 369.5057
-    Epoch 30/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 324.3075 - val_loss: 352.1431
-    Epoch 31/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 316.7990 - val_loss: 350.0280
-    Epoch 32/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 312.3790 - val_loss: 358.5343
-    Epoch 33/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 308.4422 - val_loss: 354.6915
-    Epoch 34/100
-    6375/6375 [==============================] - 1s 177us/step - loss: 306.5524 - val_loss: 391.4256
-    Epoch 35/100
-    6375/6375 [==============================] - 1s 178us/step - loss: 302.2359 - val_loss: 370.6015
-    Epoch 36/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 299.5328 - val_loss: 377.8638
-    Epoch 37/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 293.2292 - val_loss: 370.4075
-    Epoch 38/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 289.5931 - val_loss: 377.8006
-    Epoch 39/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 284.3998 - val_loss: 383.3134
-    Epoch 40/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 280.8011 - val_loss: 383.6052
-    Epoch 41/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 279.2817 - val_loss: 380.3654
-    Epoch 42/100
-    6375/6375 [==============================] - 1s 176us/step - loss: 273.9392 - val_loss: 379.5005
-    Epoch 43/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 272.0591 - val_loss: 406.7120
-    Epoch 44/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 267.8477 - val_loss: 399.7667
-    Epoch 45/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 264.3670 - val_loss: 381.9012
-    Epoch 46/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 263.5897 - val_loss: 388.8706
-    Epoch 47/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 261.0962 - val_loss: 378.2534
-    Epoch 48/100
-    6375/6375 [==============================] - 1s 179us/step - loss: 255.5351 - val_loss: 411.3993
-    Epoch 49/100
-    6375/6375 [==============================] - 1s 178us/step - loss: 253.9493 - val_loss: 401.2737
-    Epoch 50/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 252.2055 - val_loss: 403.7516
-    Epoch 51/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 249.3738 - val_loss: 381.5750
-    Epoch 52/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 246.2976 - val_loss: 392.3172
-    Epoch 53/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 246.4047 - val_loss: 396.0426
-    Epoch 54/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 241.4298 - val_loss: 406.4418
-    Epoch 55/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 243.9152 - val_loss: 412.6466
-    Epoch 56/100
-    6375/6375 [==============================] - 1s 179us/step - loss: 240.3452 - val_loss: 409.0809
-    Epoch 57/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 239.9516 - val_loss: 382.0345
-    Epoch 58/100
-    6375/6375 [==============================] - 1s 189us/step - loss: 231.7831 - val_loss: 391.4969
-    Epoch 59/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 235.5635 - val_loss: 384.9417
-    Epoch 60/100
-    6375/6375 [==============================] - 1s 189us/step - loss: 231.7898 - val_loss: 410.0629
-    Epoch 61/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 232.7682 - val_loss: 405.1488
-    Epoch 62/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 227.3918 - val_loss: 419.8626
-    Epoch 63/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 229.3298 - val_loss: 391.7557
-    Epoch 64/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 230.8497 - val_loss: 381.6628
-    Epoch 65/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 224.9296 - val_loss: 387.8954
-    Epoch 66/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 222.8157 - val_loss: 399.4332
-    Epoch 67/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 221.9742 - val_loss: 403.0952
-    Epoch 68/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 219.6450 - val_loss: 407.6237
-    Epoch 69/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 220.4569 - val_loss: 402.9678
-    Epoch 70/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 220.9188 - val_loss: 417.9301
-    Epoch 71/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 217.2209 - val_loss: 429.4120
-    Epoch 72/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 219.7498 - val_loss: 402.3319
-    Epoch 73/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 215.1723 - val_loss: 391.7458
-    Epoch 74/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 216.6396 - val_loss: 401.0542
-    Epoch 75/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 211.7598 - val_loss: 404.9380
-    Epoch 76/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 214.4346 - val_loss: 394.8202
-    Epoch 77/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 211.4234 - val_loss: 426.5723
-    Epoch 78/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 211.6442 - val_loss: 413.1396
-    Epoch 79/100
-    6375/6375 [==============================] - 1s 187us/step - loss: 209.6833 - val_loss: 392.3714
-    Epoch 80/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 208.6977 - val_loss: 403.4472
-    Epoch 81/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 207.8012 - val_loss: 400.9391
-    Epoch 82/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 206.3725 - val_loss: 410.8671
-    Epoch 83/100
-    6375/6375 [==============================] - 1s 182us/step - loss: 206.9980 - val_loss: 427.0327
-    Epoch 84/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 204.5088 - val_loss: 401.8384
-    Epoch 85/100
-    6375/6375 [==============================] - 1s 179us/step - loss: 203.5964 - val_loss: 414.8394
-    Epoch 86/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 203.8588 - val_loss: 402.7258
-    Epoch 87/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 202.2180 - val_loss: 411.1985
-    Epoch 88/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 199.6234 - val_loss: 440.1273
-    Epoch 89/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 202.5166 - val_loss: 416.9306
-    Epoch 90/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 199.0725 - val_loss: 423.3878
-    Epoch 91/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 199.0153 - val_loss: 414.5249
-    Epoch 92/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 199.3241 - val_loss: 432.8573
-    Epoch 93/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 200.0546 - val_loss: 409.5720
-    Epoch 94/100
-    6375/6375 [==============================] - 1s 181us/step - loss: 198.4487 - val_loss: 407.5772
-    Epoch 95/100
-    6375/6375 [==============================] - 1s 180us/step - loss: 198.2989 - val_loss: 432.7136
-    Epoch 96/100
-    6375/6375 [==============================] - 1s 186us/step - loss: 197.7724 - val_loss: 412.2946
-    Epoch 97/100
-    6375/6375 [==============================] - 1s 183us/step - loss: 198.2733 - val_loss: 397.4651
-    Epoch 98/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 196.4165 - val_loss: 412.7698
-    Epoch 99/100
-    6375/6375 [==============================] - 1s 184us/step - loss: 196.5273 - val_loss: 408.4297
-    Epoch 100/100
-    6375/6375 [==============================] - 1s 185us/step - loss: 200.0868 - val_loss: 388.7474
 
 
-
-
-```
+```python
 # plot training progress (via loss func) over epochs
-fig,ax = plt.subplots(1,1)
+fig,ax = plt.subplots(1,1,figsize=(12,6))
 ax.plot(model_history.epoch,model_history.history['loss'],label='training')
 ax.plot(model_history.epoch,model_history.history['val_loss'],label='validation')
 
 ax.set_xlabel('# of epochs')
 ax.set_ylabel('Loss')
-ax.set_title('Training and validation loss of NN as a function of epochs')
+ax.set_title('Training and validation loss of ANN as a function of epochs')
 
 ax.legend();
 ```
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_20_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_18_0.png)
 
 
 
 
-```
+```python
 # make predictions
 y_pred_train = model.predict(X_train)
 y_pred_test = model.predict(X_test)
@@ -13171,15 +12928,16 @@ y_pred_test = model.predict(X_test)
 
 
 
-```
+```python
 # plot results
 
 fig, axs = plt.subplots(3, 1,figsize=(99,12))
 
+fig.suptitle('Performance of ANN model')
+
 for k,ax in enumerate(axs):
     
     # plot actual ground truth
-#     ax.plot(df.time,df[angs[k]],label='actual')
     ax.plot(pd.concat([t_train,t_test]),pd.concat([y_train,y_test])[angs[k]],label='actual')
     
     # plot train set prediction
@@ -13191,17 +12949,17 @@ for k,ax in enumerate(axs):
     ax.set_ylabel(angs[k])
 
 axs[-1].set_xlabel('Time')
-axs[0].legend(loc=(0.75,1.1));
+axs[0].legend(loc=(0.95,1.1));
 ```
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_22_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_20_0.png)
 
 
 
 
-```
+```python
 model.evaluate(X_test, y_test) # prints loss function on test (currently, MSE)
 ```
 
@@ -13218,7 +12976,7 @@ model.evaluate(X_test, y_test) # prints loss function on test (currently, MSE)
 
 
 
-```
+```python
 r2_report = 'Train: '
 
 for k, ang in enumerate(angs):
@@ -13243,7 +13001,7 @@ print(r2_report)
 
 
 
-```
+```python
 # build LSTM NN
 
 # n timepoints
@@ -13293,7 +13051,7 @@ print(y_train_reshaped.shape)
 
 
 
-```
+```python
 
 model2 = Sequential()
 model2.add(LSTM(n_LSTM, input_shape=(N_past,n_sens*2), unroll=False)) # LSTM layer
@@ -13325,99 +13083,36 @@ model2.summary()
 
 
 
-```
+```python
 # train the NN
 
 model_history2 = model2.fit(X_train_reshaped, y_train_reshaped, epochs=30, batch_size=n_batch, validation_split=0.1, verbose=1, shuffle=False)
 ```
 
 
-    Train on 7166 samples, validate on 797 samples
-    Epoch 1/30
-    7166/7166 [==============================] - 33s 5ms/step - loss: 2361.8291 - val_loss: 1815.3323
-    Epoch 2/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 1760.1575 - val_loss: 1525.8264
-    Epoch 3/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 1540.7264 - val_loss: 1106.0512
-    Epoch 4/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 1028.7381 - val_loss: 809.6668
-    Epoch 5/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 855.7780 - val_loss: 715.2795
-    Epoch 6/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 783.4627 - val_loss: 675.5497
-    Epoch 7/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 751.0486 - val_loss: 644.4537
-    Epoch 8/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 720.4553 - val_loss: 607.3744
-    Epoch 9/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 662.2511 - val_loss: 522.6050
-    Epoch 10/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 580.6877 - val_loss: 463.8829
-    Epoch 11/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 513.1900 - val_loss: 410.8962
-    Epoch 12/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 461.8144 - val_loss: 379.8276
-    Epoch 13/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 430.2695 - val_loss: 366.5972
-    Epoch 14/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 406.0733 - val_loss: 357.8273
-    Epoch 15/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 388.3479 - val_loss: 338.6456
-    Epoch 16/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 378.6358 - val_loss: 342.3746
-    Epoch 17/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 370.2778 - val_loss: 336.0961
-    Epoch 18/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 365.4725 - val_loss: 333.8308
-    Epoch 19/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 355.2044 - val_loss: 332.8503
-    Epoch 20/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 349.8313 - val_loss: 333.6745
-    Epoch 21/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 345.2659 - val_loss: 331.1187
-    Epoch 22/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 337.0660 - val_loss: 340.9268
-    Epoch 23/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 333.0173 - val_loss: 345.7700
-    Epoch 24/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 326.4641 - val_loss: 350.3204
-    Epoch 25/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 323.1489 - val_loss: 342.2582
-    Epoch 26/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 319.1131 - val_loss: 337.3899
-    Epoch 27/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 314.7945 - val_loss: 337.2631
-    Epoch 28/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 313.7213 - val_loss: 336.5863
-    Epoch 29/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 309.8308 - val_loss: 338.5186
-    Epoch 30/30
-    7166/7166 [==============================] - 30s 4ms/step - loss: 305.1022 - val_loss: 330.2332
 
 
-
-
-```
+```python
 # plot training progress (via loss func) over epochs
-fig,ax = plt.subplots(1,1)
+fig,ax = plt.subplots(1,1,figsize=(12,6))
 ax.plot(model_history2.epoch,model_history2.history['loss'],label='training')
 ax.plot(model_history2.epoch,model_history2.history['val_loss'],label='validation')
 
 ax.set_xlabel('# of epochs')
 ax.set_ylabel('Loss')
-ax.set_title('Training and validation loss of NN as a function of epochs')
+ax.set_title('Training and validation loss of LSTM NN as a function of epochs')
 
 ax.legend();
 ```
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_29_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
 
 
 
 
-```
+```python
 # make predictions
 
 y_pred_train = model2.predict(X_train_reshaped)
@@ -13430,16 +13125,18 @@ print(model2.evaluate(X_test_reshaped, y_test_reshaped))
 
 
     Score:
-    3853/3853 [==============================] - 1s 245us/step
+    3853/3853 [==============================] - 1s 251us/step
     382.23176727374124
 
 
 
 
-```
+```python
 # plot results
 
 fig, axs = plt.subplots(3, 1,figsize=(99,12))
+
+fig.suptitle('Performance of LSTM NN model')
 
 for k,ax in enumerate(axs):
     
@@ -13460,12 +13157,12 @@ axs[0].legend(loc=(0.95,1.1));
 
 
 
-![png](shirt_NN_FINAL_files/shirt_NN_FINAL_31_0.png)
+![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)
 
 
 
 
-```
+```python
 r2_report = 'Train: '
 
 for k, ang in enumerate(angs):
