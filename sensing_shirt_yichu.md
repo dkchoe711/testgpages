@@ -1,6 +1,6 @@
 ---
 title: Sensing Shirt Models
-notebook: sensing_shirt_yichu.ipynb
+notebook: modeling_approches
 nav_include: 3
 ---
 

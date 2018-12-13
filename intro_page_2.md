@@ -1,6 +1,6 @@
 ---
 title: Data Description and Initial EDA
-notebook: 1a_sensing_shirt_yichu_eda_with_plots_SECTION.ipynb
+notebook: data_description_EDA
 nav_include: 2
 ---
 
