@@ -17,7 +17,7 @@ nav_include: 3
 
 A table summarizing the results shown on this page is in the **Results and Conclusions Page** This page is a longer summary of the different methods that were tried, and a subset of all tuning parameters that were swept through to be concise on the webpage.  
 
-The various models learned in class were implemented to attempt prediction of the wearer's arm movements based upon the output of the six sensors embedded in the shirt. The data used in these models were from a single subject, pooled across all three trials collected in the protocol. The subject data was taken from subject #4, because that particular data set had the fewest outliers as discussed in the **Data Description and Initial EDA** section. Additionally, due to the high frequency of the collected data, the data was downsampled to reduce the training time of the models. 
+The various models learned in class were implemented to attempt prediction of the wearer's arm movements based upon the output of the six sensors embedded in the shirt. The data used in these models were from a single subject, pooled across all three trials collected in the protocol. The subject data was taken from subject #4, because that particular data set had the fewest outliers as discussed in the **Data Description and Initial EDA** section. Additionally, due to the high frequency of the collecte data, the data was downsampled to reduce the training time of the models. 
 
 
 
@@ -28,7 +28,7 @@ The data was split as a function of time - with the first 80% of the data used a
 ## **1) Data Preparation and Cleaning**
 
 **Normalize/Standardize Functions + Feature Engineering**
-The data was standardized and normalized - additionally, new predictors were calculated, such as the first and second derivative of the sensing shirt outputs over sequential time points, prior to the time stamps being dropped from the predictor list. 
+The data was standardized and normalized - additionally, new predictors were calculated, such as the first and second derivative of the sensing shirt outputs over sequencial time points, prior to the time stamps being dropped from the predictor list. 
 
 
 
@@ -4621,12 +4621,48 @@ display_all_results(clf, X_df_added, y_df_added, poly_deg=3);
 
 
 
+### **9) NN**
+
+
+```python
+# import libraries
+
+import random
+random.seed(50) # set this so results can be reproduced
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import r2_score
+
+import keras 
+from keras.models import Sequential
+from keras.layers import LSTM
+from keras.layers import Dense
+from keras.layers import Dropout
+
+%matplotlib inline
+
+pd.set_option('display.width', 1500)
+pd.set_option('display.max_columns', 100)
+```
 
 
 
-## ** Additional Models - Basic NN and LSTM ** 
 
-In addition to the various models covered in the course, we also tried using Long Short Term Memory (LSTM) neural networks due to the timeseries/sequence dependent nature of our dataset. LSTMs are a type of Recurrent Neural Network (RNN), which are networks with loops that allow information to persist between subsequent time steps. For this model, the data was prepared slightly differently: rather than an 80%/20% train/test split, the first 2 sets of trials (each set containing 3 trials: pre-defined, composite, and random movement trials) were pooled and used for training, and the last set was pooled and used for testing.
+```python
+angs = ['hf','ab','ir'] # response: ground truth mocap angles (3 DOF)
+
+n_sens = 6
+sens = ['s'+str(k) for k in range(1,n_sens+1)] # predictors: sensor labels s1 through s6
+```
+
+
+
 
 ```python
 
@@ -4668,9 +4704,14 @@ t_test = df_test_pooled.time
 ```
 
 
+## **Additional Models - NN (with different train/test split) and LSTM**
+
+In addition to the various models covered in the course, we also tried using Long Short Term Memory (LSTM) neural networks due to the timeseries/sequence dependent nature of our dataset. LSTMs are a type of Recurrent Neural Network (RNN), which are networks with loops that allow information to persist between subsequent time steps. For this model, the data was prepared slightly differently: rather than an 80%/20% train/test split, the first 2 sets of trials (each set containing 3 trials: pre-defined, composite, and random movement trials) were pooled and used for training, and the last set was pooled and used for testing.
+
+
+
 
 ```python
-
 # verify sizes of train and test sets (before processing)
 print(X_train_raw.shape)
 print(y_train.shape)
@@ -4974,6 +5015,8 @@ display(X_test)
             0.60297412]])
 
 
+
+
 ```python
 # plot predictors and response variables over time
 
@@ -5014,6 +5057,7 @@ ax[-1].set_xlabel('Time (s)');
 
 
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)
+
 
 
 ### **Standard NN**
