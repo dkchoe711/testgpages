@@ -2769,7 +2769,6 @@ find_best_param(scores_list, depths, 'depth')
       <td>7.381882</td>
       <td>10.319233</td>
     </tr>
-    <tr>
 
 
     ab:
