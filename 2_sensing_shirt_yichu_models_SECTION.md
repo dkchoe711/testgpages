@@ -5341,8 +5341,7 @@ ax.legend();
 ```
 
 
-
-![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
+aaaaaa
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
 
 
