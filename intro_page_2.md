@@ -29,12 +29,12 @@ The total number of observations (n) for these subjects are: 80137, 102941, 9169
 ### 2) Collected Data
 Recorded data from each session includes timestamps, embedded sensor raw outputs (total of 6 sensors in the shirt), and the motion captured (MOCAP) shoulder angles (total of 3 degrees of freedom: shoulder adduction, horizontal flexion, and internal rotation). The MOCAP data is used as the angle ground truth. Therefore, the dataset has 7 initial predictors and 3 outcome variables.
 
-#### 2a) Description of Raw Data? 
+#### 2a) Description of Raw Data
+The sensor data comes from the fact that the embedded sensors change capacitance when it stretched. The capacitance is then converted to a voltage using a C2V chip, which is then sent and filtered using a low-pass filter of the arduino. 
 
 ### 3) Data Cleaning
 One thing that needed to be considered when first looking at the data is the fact in the variability present in ranges of values presented by the MOCAP data for the three angles: Abduction (ab), Horizontal Flexion (hf) and Internal Rotation (ir). This corresponds to the range of motion across all subjects in the three directions. Although the ranges are relatively consistent across the 6 subjects for hf and ab, the ir ranges fluctuate considerably. The variability here could be due to true inter-subject variability (linked to posture), as well as the lack of standardization of the definition of 0&deg; rotation in ir during the experimental data collection. 
 
-**PUT FIGURES HERE**
 
 Since the MOCAP is used as the ground truth for the model predictions, it was decided to develop a model using the data of a single subject to avoid any complications arising from using an inconsistent ground truth for ir across multiple subjects. This aligns with the goal of creating a model that would have a personalized calibration period for each individual who would use it to train the model, and then have the model predict for each subject. Later on, it may be worth extending the model to be more general, but the use case for the scope of this project to be a subject-individualized model. 
 

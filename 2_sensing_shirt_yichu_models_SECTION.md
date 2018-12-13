@@ -5034,7 +5034,7 @@ ax[-1].set_xlabel('Time (s)');
 ```
 
 
-
+The data shown below is the sensor data set used in the training/testing of this ANN. As mentioned above, the data from the first 2 (out of 3) trials of the subject's data collection [each containing the three motions: pre-defined, composite, and random movement] were pooled together, and then the third and last pooled trial was taken as the test set. 
 
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)
 
@@ -5055,6 +5055,7 @@ ax[0].legend(loc=(0.92,1.1));
 ax[-1].set_xlabel('Time (s)');
 ```
 
+The data below was split exactly as outlined above, but the data displayed is the angle data, collected by the motion capture system.
 
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)
 
@@ -5364,6 +5365,7 @@ axs[0].legend(loc=(0.95,1.1));
 ```
 
 
+The plot below shows the performance of the LSTM model on the training and test set. One interesting observation here is that the model seems to perform poorly in tracking of rapid movement - this could be due to the fact that the LSTM stores the data from previous time steps and is unable to update quickly to accommodate the rapid movements. 
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)
 
 

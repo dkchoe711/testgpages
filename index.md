@@ -19,13 +19,15 @@ The Harvard Biodesign Lab designed and built a soft sensing shirt that is capabl
 <img src="notebooks\img\sensing_shirt.png" width="400">
 
 
-**Problem Statement:**
+**Initial Problem Statement:**
 
 Is there a way to predict the position of the shoulder using only the sensor readings from the six embedded sensors in the shirt? 
 
 1. To predict three shoulder motion angles (adduction/abduction, horizontal flexion/extension, and internal/external rotation) using the sensor outputs.
 2. To evaluate the model’s accuracy and precision using data from different human subjects.
 
+
+This problem statement was later amended to look at instead the models accuracy on a single human subject's data, to see how accurately the shirt could estimate/predict the shoulder position and movement. Since the shirt would only be worn by a single subject continuously, and with the inclusion of a short calibration routine to provide the shirt with training data for each new individual (trained only on that subject), the decision to train on a single subject's data is more reasonable.
 
 
 
