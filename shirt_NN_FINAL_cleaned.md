@@ -2,14 +2,6 @@
 
 
 ```python
-# custom stype
-plt.style.use(mydir+'code/ac209a.mplstyle')
-```
-
-
-
-
-```python
 # import libraries
 
 import random
