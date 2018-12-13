@@ -2735,44 +2735,6 @@ find_best_param(scores_list, depths, 'depth')
 
 
 
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th></th>
-      <th>r2</th>
-      <th>mean_std</th>
-      <th>mae</th>
-      <th>rmse</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th rowspan="2" valign="top">ab</th>
-      <th>Train</th>
-      <td>0.935270</td>
-      <td>9.932410</td>
-      <td>7.381882</td>
-      <td>10.319233</td>
-    </tr>
-  </tbody> 
-</table>
-<div>
-
     ab:
     The best model has depth of 6.
     The best model has R2 = 0.7688269891757941.
