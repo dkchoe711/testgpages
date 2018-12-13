@@ -15,6 +15,8 @@ nav_include: 3
 
 # **Modeling Approach**
 
+A table summarizing the results shown on this page is in the **Results and Conclusions Page** This page is a longer summary of the different methods that were tried, and a subset of all tuning parameters that were swept through to be concise on the webpage.  
+
 The various models learned in class were implemented to attempt prediction of the wearer's arm movements based upon the output of the six sensors embedded in the shirt. The data used in these models were from a single subject, pooled across all three trials collected in the protocol. The subject data was taken from subject #4, because that particular data set had the fewest outliers as discussed in the **Data Description and Initial EDA** section. Additionally, due to the high frequency of the collecte data, the data was downsampled to reduce the training time of the models. 
 
 
@@ -313,7 +315,8 @@ X_df_added, y_df_added = load_data(['M1'], [1,2,3], ['A','B','C'],
 
 ### **Models**
 
-In all the models tested below, the model was run once on the original data (without the derivative terms) and once on the data set with the engineered features included in order to compare the performance of the two models. Different score metrics were calculated, such as $r^2$, mean standard error (mse), mean absolute error (mae), and root mean square error (rmse). The tables show all the scores, but $R^2$ was used as the metric to tune the models.
+In all the models tested below, the model was run once on the original data (without the derivative terms) and once on the data set with the engineered features included in order to compare the performance of the two models. Different score metrics were calculated, such as $R^2$, mean standard error (mse), mean absolute error (mae), and root mean square error (rmse). The tables show all the scores, but $R^2$ was used as the metric to tune the models.
+
 
 ### **1) Linear Regression**
 
@@ -2714,7 +2717,7 @@ for ind, score in enumerate(scores_list):
     
 
 
-### **6) Decision Treeasdgfsdfdh**
+### **6) Decision Tree**
 
 
 
@@ -5340,7 +5343,7 @@ ax.legend();
 
 
 ![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
-
+[![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
 
 
 
@@ -5388,8 +5391,8 @@ axs[0].legend(loc=(0.95,1.1));
 ```
 
 
+[![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)
 
-![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_29_0.png)
 
 
 
