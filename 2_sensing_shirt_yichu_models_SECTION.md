@@ -4667,31 +4667,6 @@ sens = ['s'+str(k) for k in range(1,n_sens+1)] # predictors: sensor labels s1 th
 
 
 ```python
-# # OPTION 1: SINGLE DATA SET (for quick testing purposes)
-
-# # since for LSTM order matters, avoid pooled data (because not sure what will happen at discontinuities when concatenating)
-# # try the longest file for now (m1 t2a)
-
-# # load the data and set column headers
-# df = pd.read_csv(mydir+'data/M1_t2A.txt', header=None, names=['time','s1','s2','s3','s4','s5','s6','hf','ab','ir'])
-# display(df.head())
-# print(df.shape)
-
-# # separate out predictors X from response y
-# X_raw = df[sens]
-# y = df[angs]
-
-# time = df.time # just for plotting purposes
-
-# # train-test split over time (NOT RANDOMIZED)
-# X_train_raw, X_test_raw, y_train, y_test, t_train, t_test = train_test_split(X_raw,y,time,shuffle=False,test_size=0.5)
-```
-
-
-
-
-```python
-# OPTION 2: POOLED - use sets 1 and 2 as train, set 3 as test
 
 dfs = [] # list of dataframes
 t_offset = 0
@@ -5061,7 +5036,8 @@ ax[-1].set_xlabel('Time (s)');
 
 
 
-![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)
+
+[![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_13_0.png)
 
 
 
@@ -5081,8 +5057,8 @@ ax[-1].set_xlabel('Time (s)');
 ```
 
 
+[![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)
 
-![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_14_0.png)
 
 
 #### **Standard NN**
@@ -5148,8 +5124,8 @@ ax.legend();
 ```
 
 
+[![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_18_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_18_0.png)
 
-![png](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_18_0.png)
 
 
 
@@ -5341,7 +5317,6 @@ ax.legend();
 ```
 
 
-aaaaaa
 [![](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)](shirt_NN_FINAL_cleaned_files/shirt_NN_FINAL_cleaned_27_0.png)
 
 
@@ -5383,7 +5358,7 @@ for k,ax in enumerate(axs):
     # plot test set prediction
     ax.plot(t_test_reshaped,y_pred_test[:,k],label='test prediction')
     
-    ax.set_ylabel(angs[k])
+    ax.set_ylabel(angs[k]) 
 
 axs[-1].set_xlabel('Time')
 axs[0].legend(loc=(0.95,1.1));
