@@ -1,8 +1,9 @@
 ---
-title: Models
-notebook: models
+title: Sensing Shirt Models
+notebook: modeling_approches
 nav_include: 3
 ---
+
 
 
 
@@ -10,6 +11,8 @@ nav_include: 3
 {:.no_toc}
 *  
 {: toc}
+
+
 # **Models**
 
 The various models learned in class were implemented to attempt prediction of the wearer's arm movements based upon the output of the six sensors embedded in the shirt. The data used in these models were from a single subject, pooled across all three trials collected in the protocol. The subject data was taken from subject #4, because that particular data set had the fewest outliers as discussed in the **Data Description and Initial EDA** section. Additionally, due to the high frequency of the collecte data, the data was downsampled to reduce the training time of the models. 
