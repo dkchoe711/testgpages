@@ -9,7 +9,7 @@ nav_include: 5
 #Results Summary
 Below is a summary of the mutiple models tested on the sensing shirt data of a single subject. 
 
-[![](Results_updated_1.png)](Results_updated_1.png)
+[![](results1.png)](results1.png)
 
 
 
